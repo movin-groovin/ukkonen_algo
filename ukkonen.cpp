@@ -8,6 +8,10 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <algorithm>
+#include <exception>
+#include <stdexcept>
+
 #include <cassert>
 
 
@@ -46,15 +50,21 @@ namespace NMSUkkonenAlgo {
 		}
 		
 		size_t GetEdgeLength (size_t current_end = -1) const {
-			if (m_j == -1)
+			if (m_j == -1) {
 				assert (current_end != -1);
 				return current_end - m_i;
-				
+			}
+			
 			return m_j - m_i;
 		}
 		
 		size_t GetBegin () const {
 			return m_i;
+		}
+		
+		void SetBegin (size_t i) {
+			m_i = i;
+			return;
 		}
 		
 		size_t GetEnd () const {
@@ -65,28 +75,52 @@ namespace NMSUkkonenAlgo {
 			return m_parent.lock();
 		}
 		
+		void SetParent (std::shared_ptr <CNode> & node) {
+			// we don't use assert, because the parent can be changed
+			m_parent = node;
+			
+			return;
+		}
+		
 		std::shared_ptr <CNode> GetSuffLink () const {
 			return m_suff_link.lock();
 		}
 		
-		void SetSuffLink (const std::shared_ptr <CNode> &ptr_link) {
-			m_suff_link = ptr_link;
+		void SetSuffLink (const std::shared_ptr <CNode> & suff_link)
+		{
+			assert (m_suff_link.lock().get() == NULL);
+			
+			m_suff_link = suff_link;
+			
 			return;
 		}
 		
 		std::shared_ptr <CNode> GetChild (char ch) const {
 			assert (m_j != -1);
+			
 			return m_childs[GetCharIndex (ch)];
 		}
 		
-		void SetChild (const std::shared_ptr <CNode> &ptr_link, char ch) {
-			m_childs[GetCharIndex (ch)] = ptr_link;			
+		void SetChild (
+			const std::shared_ptr <CNode> & child,
+			char ch
+		)
+		{
+			// we don't use assert, because the childs can be changed
+			m_childs[GetCharIndex (ch)] = child;
+			
 			return;
 		}
 		
 		
-		CNode (size_t i, size_t j, const std::shared_ptr <CNode> & parent):
-			m_i(i), m_j(j), m_parent(parent)
+		CNode (
+			size_t i,
+			size_t j,
+			const std::shared_ptr <CNode> & parent
+		):
+			m_i(i),
+			m_j(j),
+			m_parent(parent)
 		{
 			if (j != -1)
 				m_childs.resize (chars_number);
@@ -112,7 +146,9 @@ namespace NMSUkkonenAlgo {
 		
 	public:
 	
-		CSuffixTree (const std::string & str): m_root (new CNode (0, 0, std::shared_ptr <CNode> ())) {
+		CSuffixTree (const std::string & str):
+			m_root (new CNode (0, 0, std::shared_ptr <CNode> ()))
+		{
 			m_str = str;
 			m_root->SetSuffLink (std::shared_ptr <CNode> ());
 			
@@ -130,7 +166,38 @@ namespace NMSUkkonenAlgo {
 			return;
 		}
 		
-		;
+		std::shared_ptr <CNode> InsertNode (std::shared_ptr <CNode> &parent, size_t i)
+		{
+			std::shared_ptr <CNode> new_node (new CNode (i, -1, parent));
+			parent->SetChild (new_node, m_str[i]);
+			
+			return new_node;
+		}
+		
+		std::shared_ptr <CNode> SplitEdge (std::shared_ptr <CNode> &base, size_t len) {
+			std::shared_ptr <CNode> parent = base->GetParent ();
+			std::shared_ptr <CNode> new_node {new CNode (
+					base->GetBegin (),
+					base->GetBegin () + len,
+					parent
+				)
+			};
+			
+			new_node->SetChild (base, m_str [base->GetBegin () + len]);
+			parent->SetChild (new_node, m_str[base->GetBegin ()]);
+			
+			base->SetBegin (base->GetBegin () + len);
+			base->SetParent (new_node);
+			
+			return new_node;
+		}
+		
+		Ret AddSuffix (
+			std::shared_ptr <CNode> node_walk_from,
+			char ch,
+			size_t len,
+			size_t i
+		);
 		
 		State AppendChar (
 			const std::shared_ptr <CNode> & node,
@@ -141,6 +208,45 @@ namespace NMSUkkonenAlgo {
 		
 		//
 	};
+	
+	
+	Ret CSuffixTree::AddSuffix (
+		std::shared_ptr <CNode> node_walk_from,
+		char ch,
+		size_t len,
+		size_t i
+	)
+	{
+		Ret ret_dat {nullptr, nullptr};
+		
+		// 'len' is everything less than 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
+		assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
+		
+		if (!len)
+		{
+			if (node_walk_from->GetChild (m_str [i])) {
+				return ret_dat;
+			}
+			else {
+				InsertNode (node_walk_from, i);
+				return Ret {nullptr, node_walk_from};
+			}
+		}
+		else
+		{
+			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
+			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
+				return ret_dat;
+			}
+			else {
+				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, i);
+				InsertNode (new_node, i);
+				return Ret {new_node, nullptr};
+			}
+		}
+		
+		return ret_dat;
+	}
 	
 	
 	State CSuffixTree::AppendChar (
@@ -160,20 +266,41 @@ namespace NMSUkkonenAlgo {
 }
 
 
+std::string ReadFromStreamUntilEof (std::istream & in_s, char no_ch) {
+	std::string buf, ret;
+	
+	while (std::getline (in_s, buf, '\n')) {
+		if (buf.end () != std::find (buf.begin (), buf.end (), no_ch)) {
+			throw std::runtime_error (
+				"Incorrect symbol in input string: " + std::string () + no_ch
+			);
+		}
+		ret += buf;
+	}
+	
+	return ret;
+}
+
 
 int main (int argc, char **argv) {
-	std::string test_str = "ababc";
-	test_str += '$';
-	NMSUkkonenAlgo::CSuffixTree suff_tree (test_str);
-	
-	
-	std::shared_ptr <NMSUkkonenAlgo::CNode> p;
-	
-	
-	std::cout << p.get() << std::endl;
-	
-	
-	return 0;
+	try {
+		const char fin_ch = '$';
+		std::string test_str = "ababc";
+		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
+		if (test_str[test_str.length() - 1] != '$') {
+			test_str += '$';
+		}
+		NMSUkkonenAlgo::CSuffixTree suff_tree (test_str);
+		
+		
+		std::cout << test_str << std::endl;
+		
+		
+		return 0;
+	} catch (std::exception & Exc) {
+		std::cout << Exc.what() << std::endl;
+		return 0;
+	}
 }
 
 
