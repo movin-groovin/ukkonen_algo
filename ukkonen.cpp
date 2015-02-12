@@ -28,7 +28,7 @@ namespace NMSUkkonenAlgo {
 
 	struct Ret {
 		std::shared_ptr <CNode> new_node;
-		std::shared_ptr <CNode> internal_node;
+		std::shared_ptr <CNode> internal_node; // exist node
 	};
 
 
@@ -146,10 +146,9 @@ namespace NMSUkkonenAlgo {
 		
 	public:
 	
-		CSuffixTree (const std::string & str):
+		CSuffixTree ():
 			m_root (new CNode (0, 0, std::shared_ptr <CNode> ()))
 		{
-			m_str = str;
 			m_root->SetSuffLink (std::shared_ptr <CNode> ());
 			
 			return;
@@ -157,9 +156,10 @@ namespace NMSUkkonenAlgo {
 		
 		~ CSuffixTree () {}
 		
-		void ConstructTree () {
+		void ConstructByUkkonenAlgo (const std::string & str) {
 			State ret_inf = {m_root, 0, 0};
 			
+			m_str = str;
 			for (size_t i = 0; i < m_str.length (); ++i)
 				ret_inf = AppendChar (ret_inf.node, ret_inf.length, ret_inf.ch, i);
 			
@@ -201,8 +201,8 @@ namespace NMSUkkonenAlgo {
 		
 		State AppendChar (
 			const std::shared_ptr <CNode> & node,
-			size_t length,
 			char ch,
+			size_t length,
 			size_t i
 		);
 		
@@ -219,7 +219,8 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-		// 'len' is everything less than 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
+		// 'len' is everything less than 
+		// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
 		assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
 		
 		if (!len)
@@ -251,18 +252,80 @@ namespace NMSUkkonenAlgo {
 	
 	State CSuffixTree::AppendChar (
 		const std::shared_ptr <CNode> & node,
-		size_t length,
 		char ch,
+		size_t length,
 		size_t i
 	)
 	{
-		State ret_dat;
+		Ret ret;
+		std::shared_ptr <CNode> prev_node;
+		std::shared_ptr <CNode> exist_node (node);
 		
-		//
 		
-		return ret_dat;
+		while (true)
+		{
+			ret = AddSuffix (exist_node, ch, length, i);
+			
+			// First case: the suffix already exists at the tree
+			if (!ret.new_node && !ret.internal_node) 
+			{
+				if (!ch) { // && !length
+					assert (length == 0);
+					
+					return State {std::shared_ptr<CNode> (), 0, 0};
+				}
+				else if (exist_node->GetChild (ch)->GetEdgeLength (i) == length + 1) {
+					exist_node = exist_node->GetChild (ch);
+					return State {exist_node, 0, 0};
+				}
+				else {
+					return State {exist_node, length + 1, ch};
+				}
+			}
+			// Second case: exists edge has been splited, the edge of 
+			// 1 character length has been inserted with new node
+			else if (ret.new_node)
+			{
+				if (prev_node)
+					prev_node->SetSuffLink (ret.new_node);
+				prev_node = ret.new_node;
+				
+				if (ret.new_node->GetParent () == m_root) {
+					if (ret.new_node->GetEdgeLength (i) == 1) {
+						ch = 0;
+						length = 0;
+						exist_node = ret.new_node->GetParent (); // = m_root
+						ret.new_node->SetSuffLink(m_root);
+					}
+					else {
+						--length;
+						exist_node = ret.new_node->GetParent();
+						ch = m_str[ret.new_node->GetBegin() + 1];
+					}
+				}
+				else {
+					length = ret.new_node->GetEdgeLength(i);
+					ch = m_str[ret.new_node->GetBegin()];
+					exist_node = ret.new_node->GetParent()->GetSuffLink();
+				}
+			}
+			// Third case: at exist (inertnal of course) node has been inserted
+			// an one character length edge with the node at it's end
+			else
+			{
+				length = 0;
+				ch = 0;
+				exist_node = ret.internal_node->GetSuffLink ();
+			}
+			//
+		}
+		
+		
+		assert (1 != 1);
+		// never reachs this place
 	}
-	//
+	
+	// namespace
 }
 
 
@@ -286,19 +349,20 @@ int main (int argc, char **argv) {
 	try {
 		const char fin_ch = '$';
 		std::string test_str = "ababc";
+		NMSUkkonenAlgo::CSuffixTree suff_tree;
+		
+#ifdef NDEBUG
 		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
-		if (test_str[test_str.length() - 1] != '$') {
-			test_str += '$';
-		}
-		NMSUkkonenAlgo::CSuffixTree suff_tree (test_str);
+#endif
 		
-		
+		test_str += fin_ch;
+		suff_tree.ConstructByUkkonenAlgo (test_str);
 		std::cout << test_str << std::endl;
-		
 		
 		return 0;
 	} catch (std::exception & Exc) {
 		std::cout << Exc.what() << std::endl;
+		
 		return 0;
 	}
 }
