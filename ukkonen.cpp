@@ -1,5 +1,5 @@
 
-// g++ -std=c++11 ukkonen.cpp -o ukk_algo
+// g++ -std=c++11 ukkonen.cpp -o ukk_algo -g
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
 
 
@@ -221,7 +221,10 @@ namespace NMSUkkonenAlgo {
 		
 		// 'len' is everything less than 
 		// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
-		assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
+#ifndef NDEBUG
+		if (node_walk_from->GetChild (ch))
+			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
+#endif
 		
 		if (!len)
 		{
