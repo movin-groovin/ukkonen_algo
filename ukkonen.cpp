@@ -11,8 +11,10 @@
 #include <algorithm>
 #include <exception>
 #include <stdexcept>
+#include <stack>
 
 #include <cassert>
+#include <cstdio>
 
 
 
@@ -33,9 +35,11 @@ namespace NMSUkkonenAlgo {
 
 
 	class CNode {
-	private:
+	public:
 		static const size_t chars_number = 256;
 		static const unsigned char junior_ch = 0;
+		
+	private:
 		// substring is [m_i, m_j)
 		size_t m_i;
 		// if m_j equals -1, then this node is a leaf
@@ -45,6 +49,10 @@ namespace NMSUkkonenAlgo {
 		std::vector <std::shared_ptr <CNode>> m_childs;
 		
 	public:
+		bool IsLeaf () const {
+			return m_j == -1;
+		}
+	
 		size_t GetCharIndex (char ch) const {
 			return static_cast <unsigned char> (ch) - junior_ch;
 		}
@@ -175,6 +183,7 @@ namespace NMSUkkonenAlgo {
 		}
 		
 		std::shared_ptr <CNode> SplitEdge (std::shared_ptr <CNode> &base, size_t len) {
+  std::cout << "Insert: " << len << "; " << m_str[base->GetBegin () + len - 1] << '\n';
 			std::shared_ptr <CNode> parent = base->GetParent ();
 			std::shared_ptr <CNode> new_node {new CNode (
 					base->GetBegin (),
@@ -192,6 +201,60 @@ namespace NMSUkkonenAlgo {
 			return new_node;
 		}
 		
+#ifndef NDEBUG
+		struct PRINT_ENTRY {
+			std::shared_ptr <CNode> element;
+			unsigned char cnt;
+		};
+
+		void PrintTree () const {
+			std::stack <PRINT_ENTRY> stack;
+			
+	//std::cout << m_root.get()<<'\n';	
+			stack.push (PRINT_ENTRY {m_root, 0});
+			while (!stack.empty ())
+			{
+				std::shared_ptr <CNode> proc_elem = stack.top().element;
+				unsigned char proc_cnt = stack.top().cnt;
+				
+	//std::cout << "Node: "<<proc_elem.get()<<"; cnt: "<<(int)proc_cnt<<'\n';
+				
+				for (int cnt = proc_cnt; cnt <= CNode::chars_number - 1; ++cnt)
+				{
+					std::shared_ptr <CNode> child = proc_elem->GetChild (cnt);
+	//std::cout << "Node: " << child.get() << "; cnt: " << (int)cnt <<'\n';
+					if (child) {
+						PrintEdge (child);
+						if (!child->IsLeaf ()) {
+							stack.top().cnt = cnt + 1;
+							stack.push (PRINT_ENTRY {child, 0});
+							goto NEXT_LEVEL;
+						}
+						else {
+							continue;
+						}
+					}
+				}
+				stack.pop();
+				
+				NEXT_LEVEL:;
+			}
+			
+			
+			return;
+		}
+		
+		void PrintEdge (std::shared_ptr <CNode> & node) const {
+			std::cout << std::string().assign (
+				m_str,
+				node->GetBegin(),
+				node->GetEdgeLength(m_str.length())
+			) << '\n';
+			
+			return;
+		}
+#endif
+		
 		Ret AddSuffix (
 			std::shared_ptr <CNode> node_walk_from,
 			char ch,
@@ -205,11 +268,8 @@ namespace NMSUkkonenAlgo {
 			size_t length,
 			size_t i
 		);
-		
-		//
 	};
-	
-	
+	// ====================================================================================
 	Ret CSuffixTree::AddSuffix (
 		std::shared_ptr <CNode> node_walk_from,
 		char ch,
@@ -219,13 +279,7 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-		// 'len' is everything less than 
-		// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
-#ifndef NDEBUG
-		if (node_walk_from->GetChild (ch))
-			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
-#endif
-		
+	std::cout <<"1\n";	
 		if (!len)
 		{
 			if (node_walk_from->GetChild (m_str [i])) {
@@ -238,7 +292,12 @@ namespace NMSUkkonenAlgo {
 		}
 		else
 		{
+			// 'len' is everything less than 
+			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
+			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
+	std::cout <<"2\n";	
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
+	std::cout << node_begin->GetBegin () << "; " << node_begin->GetEnd () << ": " << i << "\n";
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
 				return ret_dat;
 			}
@@ -249,10 +308,10 @@ namespace NMSUkkonenAlgo {
 			}
 		}
 		
+		
 		return ret_dat;
 	}
-	
-	
+	// ====================================================================================
 	State CSuffixTree::AppendChar (
 		const std::shared_ptr <CNode> & node,
 		char ch,
@@ -267,7 +326,15 @@ namespace NMSUkkonenAlgo {
 		
 		while (true)
 		{
+	/*
+	std::cout << "ch: "<<ch<<"; length: "<<length<<"; i: "<<i<<'\n';
+	if (exist_node) std::cout << "Before: " << exist_node.get()<<"; i: "<<exist_node->GetBegin()<<"; j: "<<exist_node->GetEnd()<<"; parent: "
+			  <<exist_node->GetParent()<<"; suff lnk: "<<exist_node->GetSuffLink()<<"\n";
+	else 
+		std::cout << "NULL ptr\n";
+	*/
 			ret = AddSuffix (exist_node, ch, length, i);
+	//std::cout << "After new: " << ret.new_node<<"; exist: "<<ret.internal_node<<"\n\n";
 			
 			// First case: the suffix already exists at the tree
 			if (!ret.new_node && !ret.internal_node) 
@@ -275,7 +342,7 @@ namespace NMSUkkonenAlgo {
 				if (!ch) { // && !length
 					assert (length == 0);
 					
-					return State {std::shared_ptr<CNode> (), 0, 0};
+					return State {exist_node, 1, m_str[i]};
 				}
 				else if (exist_node->GetChild (ch)->GetEdgeLength (i) == length + 1) {
 					exist_node = exist_node->GetChild (ch);
@@ -312,13 +379,16 @@ namespace NMSUkkonenAlgo {
 					exist_node = ret.new_node->GetParent()->GetSuffLink();
 				}
 			}
-			// Third case: at exist (inertnal of course) node has been inserted
+			// Third case: at exist (internal of course) node has been inserted
 			// an one character length edge with the node at it's end
 			else
 			{
 				length = 0;
 				ch = 0;
 				exist_node = ret.internal_node->GetSuffLink ();
+				
+				if (exist_node == m_root) 
+					return State {m_root, 0, 0};
 			}
 			//
 		}
@@ -349,6 +419,15 @@ std::string ReadFromStreamUntilEof (std::istream & in_s, char no_ch) {
 
 
 int main (int argc, char **argv) {
+	std::pair <bool, bool> p1 (1, 1);
+	std::pair <int, bool> p2 (111, true);
+	
+	const char *ptr;
+	char *const ptr1 = 0;
+	int const a=1;
+	
+	p1 = p2;
+	
 	try {
 		const char fin_ch = '$';
 		std::string test_str = "ababc";
@@ -360,7 +439,11 @@ int main (int argc, char **argv) {
 		
 		test_str += fin_ch;
 		suff_tree.ConstructByUkkonenAlgo (test_str);
-		std::cout << test_str << std::endl;
+		std::cout << test_str << "\n\n";
+#ifndef NDEBUG
+		std::cout << "Suffix tree: \n";
+		suff_tree.PrintTree ();
+#endif
 		
 		return 0;
 	} catch (std::exception & Exc) {
