@@ -2,7 +2,7 @@
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -g
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
 
-
+//#define NDEBUG_OWN
 
 #include <iostream>
 #include <string>
@@ -169,7 +169,7 @@ namespace NMSUkkonenAlgo {
 			
 			m_str = str;
 			for (size_t i = 0; i < m_str.length (); ++i)
-				ret_inf = AppendChar (ret_inf.node, ret_inf.length, ret_inf.ch, i);
+				ret_inf = AppendChar (ret_inf.node, ret_inf.ch, ret_inf.length, i);
 			
 			return;
 		}
@@ -183,7 +183,7 @@ namespace NMSUkkonenAlgo {
 		}
 		
 		std::shared_ptr <CNode> SplitEdge (std::shared_ptr <CNode> &base, size_t len) {
-  std::cout << "Insert: " << len << "; " << m_str[base->GetBegin () + len - 1] << '\n';
+  //std::cout << "Insert: " << len << "; " << m_str[base->GetBegin () + len - 1] << '\n';
 			std::shared_ptr <CNode> parent = base->GetParent ();
 			std::shared_ptr <CNode> new_node {new CNode (
 					base->GetBegin (),
@@ -205,13 +205,15 @@ namespace NMSUkkonenAlgo {
 		struct PRINT_ENTRY {
 			std::shared_ptr <CNode> element;
 			unsigned char cnt;
+			std::string space;
 		};
 
-		void PrintTree () const {
+		void PrintDfs () const {
 			std::stack <PRINT_ENTRY> stack;
+			std::string base_space ("  ");
 			
 	//std::cout << m_root.get()<<'\n';	
-			stack.push (PRINT_ENTRY {m_root, 0});
+			stack.push (PRINT_ENTRY {m_root, 0, ""});
 			while (!stack.empty ())
 			{
 				std::shared_ptr <CNode> proc_elem = stack.top().element;
@@ -224,10 +226,15 @@ namespace NMSUkkonenAlgo {
 					std::shared_ptr <CNode> child = proc_elem->GetChild (cnt);
 	//std::cout << "Node: " << child.get() << "; cnt: " << (int)cnt <<'\n';
 					if (child) {
-						PrintEdge (child);
+						PrintEdge (child, stack.top().space);
 						if (!child->IsLeaf ()) {
 							stack.top().cnt = cnt + 1;
-							stack.push (PRINT_ENTRY {child, 0});
+							stack.push (PRINT_ENTRY {
+									child,
+									0,
+									stack.top().space + base_space
+								}
+							);
 							goto NEXT_LEVEL;
 						}
 						else {
@@ -244,8 +251,8 @@ namespace NMSUkkonenAlgo {
 			return;
 		}
 		
-		void PrintEdge (std::shared_ptr <CNode> & node) const {
-			std::cout << std::string().assign (
+		void PrintEdge (std::shared_ptr <CNode> & node, const std::string & prefix) const {
+			std::cout << prefix << std::string().assign (
 				m_str,
 				node->GetBegin(),
 				node->GetEdgeLength(m_str.length())
@@ -279,7 +286,7 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-	std::cout <<"1\n";	
+	//std::cout <<"1 = i: " << i << "; ch: " << m_str[i] << "; len: " << len << '\n';	
 		if (!len)
 		{
 			if (node_walk_from->GetChild (m_str [i])) {
@@ -295,14 +302,14 @@ namespace NMSUkkonenAlgo {
 			// 'len' is everything less than 
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
 			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
-	std::cout <<"2\n";	
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
-	std::cout << node_begin->GetBegin () << "; " << node_begin->GetEnd () << ": " << i << "\n";
+	//std::cout << "2 = " << node_begin->GetBegin () << "; " << (int)node_begin->GetEnd () << "\n";
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
 				return ret_dat;
 			}
 			else {
-				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, i);
+				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
+	//std::cout << "3 = " << new_node->GetBegin () << "; " << (int)new_node->GetEnd () << "\n\n";
 				InsertNode (new_node, i);
 				return Ret {new_node, nullptr};
 			}
@@ -344,7 +351,9 @@ namespace NMSUkkonenAlgo {
 					
 					return State {exist_node, 1, m_str[i]};
 				}
-				else if (exist_node->GetChild (ch)->GetEdgeLength (i) == length + 1) {
+				// GetEdgeLength (i + 1) -> i + 1, not i, because we have
+				// added implicitly for every leaf node new character
+				else if (exist_node->GetChild (ch)->GetEdgeLength (i + 1) == length + 1) {
 					exist_node = exist_node->GetChild (ch);
 					return State {exist_node, 0, 0};
 				}
@@ -361,7 +370,7 @@ namespace NMSUkkonenAlgo {
 				prev_node = ret.new_node;
 				
 				if (ret.new_node->GetParent () == m_root) {
-					if (ret.new_node->GetEdgeLength (i) == 1) {
+					if (ret.new_node->GetEdgeLength () == 1) {
 						ch = 0;
 						length = 0;
 						exist_node = ret.new_node->GetParent (); // = m_root
@@ -374,7 +383,7 @@ namespace NMSUkkonenAlgo {
 					}
 				}
 				else {
-					length = ret.new_node->GetEdgeLength(i);
+					length = ret.new_node->GetEdgeLength();
 					ch = m_str[ret.new_node->GetBegin()];
 					exist_node = ret.new_node->GetParent()->GetSuffLink();
 				}
@@ -387,7 +396,7 @@ namespace NMSUkkonenAlgo {
 				ch = 0;
 				exist_node = ret.internal_node->GetSuffLink ();
 				
-				if (exist_node == m_root) 
+				if (exist_node == m_root)
 					return State {m_root, 0, 0};
 			}
 			//
@@ -419,30 +428,20 @@ std::string ReadFromStreamUntilEof (std::istream & in_s, char no_ch) {
 
 
 int main (int argc, char **argv) {
-	std::pair <bool, bool> p1 (1, 1);
-	std::pair <int, bool> p2 (111, true);
-	
-	const char *ptr;
-	char *const ptr1 = 0;
-	int const a=1;
-	
-	p1 = p2;
-	
 	try {
 		const char fin_ch = '$';
 		std::string test_str = "ababc";
 		NMSUkkonenAlgo::CSuffixTree suff_tree;
 		
-#ifdef NDEBUG
 		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
-#endif
+		// printf 'aiudawida' | ./ukk_algo
 		
 		test_str += fin_ch;
 		suff_tree.ConstructByUkkonenAlgo (test_str);
-		std::cout << test_str << "\n\n";
+		std::cout << "\nString: " << test_str << "\n\n";
 #ifndef NDEBUG
 		std::cout << "Suffix tree: \n";
-		suff_tree.PrintTree ();
+		suff_tree.PrintDfs ();
 #endif
 		
 		return 0;
