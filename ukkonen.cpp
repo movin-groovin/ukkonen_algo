@@ -183,7 +183,6 @@ namespace NMSUkkonenAlgo {
 		}
 		
 		std::shared_ptr <CNode> SplitEdge (std::shared_ptr <CNode> &base, size_t len) {
-  //std::cout << "Insert: " << len << "; " << m_str[base->GetBegin () + len - 1] << '\n';
 			std::shared_ptr <CNode> parent = base->GetParent ();
 			std::shared_ptr <CNode> new_node {new CNode (
 					base->GetBegin (),
@@ -212,19 +211,16 @@ namespace NMSUkkonenAlgo {
 			std::stack <PRINT_ENTRY> stack;
 			std::string base_space ("  ");
 			
-	//std::cout << m_root.get()<<'\n';	
+			
 			stack.push (PRINT_ENTRY {m_root, 0, ""});
 			while (!stack.empty ())
 			{
 				std::shared_ptr <CNode> proc_elem = stack.top().element;
 				unsigned char proc_cnt = stack.top().cnt;
 				
-	//std::cout << "Node: "<<proc_elem.get()<<"; cnt: "<<(int)proc_cnt<<'\n';
-				
 				for (int cnt = proc_cnt; cnt <= CNode::chars_number - 1; ++cnt)
 				{
 					std::shared_ptr <CNode> child = proc_elem->GetChild (cnt);
-	//std::cout << "Node: " << child.get() << "; cnt: " << (int)cnt <<'\n';
 					if (child) {
 						PrintEdge (child, stack.top().space);
 						if (!child->IsLeaf ()) {
@@ -286,7 +282,7 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-	//std::cout <<"First = i: " << i << "; m_str[i]: " << m_str[i] << "; ch: " << ch << "; len: " << len << '\n';	
+		
 		while (len && node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) < len) {
 			node_walk_from = node_walk_from->GetChild (ch);
 			len -= node_walk_from->GetEdgeLength (i + 1);
@@ -312,7 +308,6 @@ namespace NMSUkkonenAlgo {
 		else {
 			// 'len' is everything less than 
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
-	//std::cout << "Second = " << node_walk_from->GetChild (ch)->GetBegin () << "; " << (int)node_walk_from->GetChild (ch)->GetEnd () << "; len: " << len << '\n';
 			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
 			
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
@@ -321,7 +316,6 @@ namespace NMSUkkonenAlgo {
 			}
 			else {
 				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
-	//std::cout << "Third = " << new_node->GetBegin () << "; " << (int)new_node->GetEnd () << "; Len: " << (int)new_node->GetEdgeLength () << "\n\n";
 				InsertNode (new_node, i);
 				return Ret {new_node, nullptr};
 			}
@@ -343,17 +337,8 @@ namespace NMSUkkonenAlgo {
 		std::shared_ptr <CNode> exist_node (node);
 		
 		
-		while (true)
-		{
-	/*
-	std::cout << "ch: "<<ch<<"; length: "<<length<<"; i: "<<i<<'\n';
-	if (exist_node) std::cout << "Before: " << exist_node.get()<<"; i: "<<exist_node->GetBegin()<<"; j: "<<exist_node->GetEnd()<<"; parent: "
-			  <<exist_node->GetParent()<<"; suff lnk: "<<exist_node->GetSuffLink()<<"\n";
-	else 
-		std::cout << "NULL ptr\n";
-	*/
+		while (true) {
 			ret = AddSuffix (exist_node, ch, length, i);
-	//std::cout << "After new: " << ret.new_node<<"; exist: "<<ret.internal_node<<"\n\n";
 			
 			// First case: the suffix already exists at the tree
 			if (!ret.new_node && !ret.internal_node) 
