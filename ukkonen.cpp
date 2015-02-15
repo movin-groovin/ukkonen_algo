@@ -96,7 +96,7 @@ namespace NMSUkkonenAlgo {
 		
 		void SetSuffLink (const std::shared_ptr <CNode> & suff_link)
 		{
-			assert (m_suff_link.lock().get() == NULL);
+			//assert (m_suff_link.lock().get() == nullptr);
 			
 			m_suff_link = suff_link;
 			
@@ -286,11 +286,16 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-	std::cout <<"1 = i: " << i << "; m_str[i]: " << m_str[i] << "; ch: " << ch << "; len: " << len << '\n';	
-		if (len && node_walk_from->GetChild (ch)->GetEdgeLength (i) == len) {
-			//node_walk_from = node_walk_from->GetChild (ch);
-			ch = 0;
+	//std::cout <<"First = i: " << i << "; m_str[i]: " << m_str[i] << "; ch: " << ch << "; len: " << len << '\n';	
+		while (len && node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) < len) {
+			node_walk_from = node_walk_from->GetChild (ch);
+			len -= node_walk_from->GetEdgeLength (i + 1);
+			ch = m_str[i - len];
+		}
+		if (len && node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) == len) {
+			node_walk_from = node_walk_from->GetChild (ch);
 			len = 0;
+			ch = 0;
 		}
 		
 		if (!len) {
@@ -307,7 +312,7 @@ namespace NMSUkkonenAlgo {
 		else {
 			// 'len' is everything less than 
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
-	std::cout << "2 = " << node_walk_from->GetChild (ch)->GetBegin () << "; " << (int)node_walk_from->GetChild (ch)->GetEnd () << "\n";
+	//std::cout << "Second = " << node_walk_from->GetChild (ch)->GetBegin () << "; " << (int)node_walk_from->GetChild (ch)->GetEnd () << "; len: " << len << '\n';
 			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
 			
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
@@ -316,7 +321,7 @@ namespace NMSUkkonenAlgo {
 			}
 			else {
 				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
-	std::cout << "3 = " << new_node->GetBegin () << "; " << (int)new_node->GetEnd () << "; Len: " << (int)new_node->GetEdgeLength () << "\n\n";
+	//std::cout << "Third = " << new_node->GetBegin () << "; " << (int)new_node->GetEnd () << "; Len: " << (int)new_node->GetEdgeLength () << "\n\n";
 				InsertNode (new_node, i);
 				return Ret {new_node, nullptr};
 			}
@@ -445,12 +450,14 @@ std::string ReadFromStreamUntilEof (std::istream & in_s, char no_ch) {
 int main (int argc, char **argv) {
 	try {
 		const char fin_ch = '$';
-		std::string test_str = "aidada";//"ababc"; // aidada
+		std::string test_str = "ababc";
 		NMSUkkonenAlgo::CSuffixTree suff_tree;
 		
-		//test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
+		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
 		// printf 'aiudawida' | ./ukk_algo
 		// printf 'auaa' | ./ukk_algo
+		// printf 'adasdas' | ./ukk_algo
+		// printf 'aidada' | ./ukk_algo
 		
 		test_str += fin_ch;
 		suff_tree.ConstructByUkkonenAlgo (test_str);
