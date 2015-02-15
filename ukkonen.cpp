@@ -286,9 +286,11 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-	//std::cout <<"1 = i: " << i << "; ch: " << m_str[i] << "; len: " << len << '\n';	
+	std::cout <<"1 = i: " << i << "; m_str[i]: " << m_str[i] << "; ch: " << ch << "; len: " << len << '\n';	
 		if (!len)
 		{
+			assert (ch == 0);
+			
 			if (node_walk_from->GetChild (m_str [i])) {
 				return ret_dat;
 			}
@@ -301,15 +303,16 @@ namespace NMSUkkonenAlgo {
 		{
 			// 'len' is everything less than 
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
+	std::cout << "2 = " << node_walk_from->GetChild (ch)->GetBegin () << "; " << (int)node_walk_from->GetChild (ch)->GetEnd () << "\n";
 			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
+			
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
-	//std::cout << "2 = " << node_begin->GetBegin () << "; " << (int)node_begin->GetEnd () << "\n";
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
 				return ret_dat;
 			}
 			else {
 				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
-	//std::cout << "3 = " << new_node->GetBegin () << "; " << (int)new_node->GetEnd () << "\n\n";
+	std::cout << "3 = " << new_node->GetBegin () << "; " << (int)new_node->GetEnd () << "; Len: " << (int)new_node->GetEdgeLength () << "\n\n";
 				InsertNode (new_node, i);
 				return Ret {new_node, nullptr};
 			}
@@ -349,6 +352,9 @@ namespace NMSUkkonenAlgo {
 				if (!ch) { // && !length
 					assert (length == 0);
 					
+					if (exist_node->GetChild(m_str[i])->GetEdgeLength(i + 1) == 1) {
+						return State {exist_node->GetChild(m_str[i]), 0, 0};
+					}
 					return State {exist_node, 1, m_str[i]};
 				}
 				// GetEdgeLength (i + 1) -> i + 1, not i, because we have
@@ -394,10 +400,15 @@ namespace NMSUkkonenAlgo {
 			{
 				length = 0;
 				ch = 0;
-				exist_node = ret.internal_node->GetSuffLink ();
 				
-				if (exist_node == m_root)
+				if (prev_node)
+					prev_node->SetSuffLink (ret.internal_node);
+				prev_node = ret.internal_node;
+				
+				if (ret.internal_node == m_root) // exist_node == ret.internal_node
 					return State {m_root, 0, 0};
+				
+				exist_node = ret.internal_node->GetSuffLink ();
 			}
 			//
 		}
@@ -430,11 +441,12 @@ std::string ReadFromStreamUntilEof (std::istream & in_s, char no_ch) {
 int main (int argc, char **argv) {
 	try {
 		const char fin_ch = '$';
-		std::string test_str = "ababc";
+		std::string test_str = "aidada";//"ababc"; // aidada
 		NMSUkkonenAlgo::CSuffixTree suff_tree;
 		
-		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
+		//test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
 		// printf 'aiudawida' | ./ukk_algo
+		// printf 'auaa' | ./ukk_algo
 		
 		test_str += fin_ch;
 		suff_tree.ConstructByUkkonenAlgo (test_str);
