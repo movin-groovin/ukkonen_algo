@@ -1,5 +1,5 @@
 
-// g++ -std=c++11 ukkonen.cpp -o ukk_algo -g
+// g++ -std=c++11 ukkonen.cpp -o ukk_algo -g -pg
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
 
 //#define NDEBUG_OWN
