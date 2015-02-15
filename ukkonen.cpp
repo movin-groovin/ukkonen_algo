@@ -287,8 +287,13 @@ namespace NMSUkkonenAlgo {
 		Ret ret_dat {nullptr, nullptr};
 		
 	std::cout <<"1 = i: " << i << "; m_str[i]: " << m_str[i] << "; ch: " << ch << "; len: " << len << '\n';	
-		if (!len)
-		{
+		if (len && node_walk_from->GetChild (ch)->GetEdgeLength (i) == len) {
+			//node_walk_from = node_walk_from->GetChild (ch);
+			ch = 0;
+			len = 0;
+		}
+		
+		if (!len) {
 			assert (ch == 0);
 			
 			if (node_walk_from->GetChild (m_str [i])) {
@@ -299,8 +304,7 @@ namespace NMSUkkonenAlgo {
 				return Ret {nullptr, node_walk_from};
 			}
 		}
-		else
-		{
+		else {
 			// 'len' is everything less than 
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
 	std::cout << "2 = " << node_walk_from->GetChild (ch)->GetBegin () << "; " << (int)node_walk_from->GetChild (ch)->GetEnd () << "\n";
