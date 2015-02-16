@@ -1,8 +1,14 @@
 
+// printf 'aiudawida' | ./ukk_algo
+// printf 'auaa' | ./ukk_algo
+// printf 'adasdas' | ./ukk_algo
+// printf 'aidada' | ./ukk_algo
+
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -g -pg
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
 
-//#define NDEBUG_OWN
+#define DEBUG_READ_FROM_FILE
+
 
 #include <iostream>
 #include <string>
@@ -12,6 +18,7 @@
 #include <exception>
 #include <stdexcept>
 #include <stack>
+#include <fstream>
 
 #include <cassert>
 #include <cstdio>
@@ -438,11 +445,20 @@ int main (int argc, char **argv) {
 		std::string test_str = "ababc";
 		NMSUkkonenAlgo::CSuffixTree suff_tree;
 		
+#ifdef DEBUG_READ_FROM_FILE
+		if (argc < 2) {
+			std::cout << "Enter a file's name\n";
+			return 10001;
+		}
+		std::ifstream ifs (argv[1]);
+		if (!ifs) {
+			std::cout << "Can't open the file: " << argv[1] << "\n";
+			return 10002;
+		}
+		std::getline (ifs, test_str);
+#else
 		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
-		// printf 'aiudawida' | ./ukk_algo
-		// printf 'auaa' | ./ukk_algo
-		// printf 'adasdas' | ./ukk_algo
-		// printf 'aidada' | ./ukk_algo
+#endif
 		
 		test_str += fin_ch;
 		suff_tree.ConstructByUkkonenAlgo (test_str);
