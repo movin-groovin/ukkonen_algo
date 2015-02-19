@@ -3,6 +3,6 @@
 ukk_algo
 100000_chars.txt
 ukk_out.txt
-test_chars.txt
+#test_chars.txt
 gmon.out
 gprof.txt
