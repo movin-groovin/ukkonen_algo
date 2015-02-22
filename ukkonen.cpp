@@ -474,8 +474,8 @@ int main (int argc, char **argv) {
 		test_str += fin_ch;
 		
 		suff_tree.ConstructByUkkonenAlgo (test_str);
-		std::cout << "\nString: " << test_str << "\n\n";
 #ifndef NDEBUG
+		std::cout << "\nString: " << test_str << "\n\n";
 		std::cout << "Suffix tree: \n";
 		suff_tree.PrintDfs ();
 #endif
