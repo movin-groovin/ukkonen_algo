@@ -1,15 +1,6 @@
 
-// printf 'aiudawida' | ./ukk_algo
-// printf 'auaa' | ./ukk_algo
-// printf 'adasdas' | ./ukk_algo
-// printf 'aidada' | ./ukk_algo
-// printf '6rr46r4r6r' | ./ukk_algo
-// printf '6rr4r66r4r6r' | ./ukk_algo
-
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -g -pg
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
-
-
 
 #include <iostream>
 #include <string>
