@@ -141,15 +141,24 @@ namespace NMSUkkonenAlgo {
 		~ CNode () {}
 	};
 
-
+	// ====================================================================================
 
 	class CSuffixTree {
 	private:
 		std::shared_ptr <CNode> m_root;
 		std::string m_str;
+		size_t *m_g_ind;
 		
 		bool IsRoot (const std::shared_ptr <CNode> & ptr_link) const {
 			return (ptr_link->GetBegin () == 0) && (ptr_link->GetEnd () == 0);
+		}
+		
+		size_t GetCurrentIndex () const {
+			return *m_g_ind;
+		}
+		
+		void SetCurrentIndex (size_t i) {
+			*m_g_ind = i;
 		}
 		
 	public:
@@ -158,18 +167,23 @@ namespace NMSUkkonenAlgo {
 			m_root (new CNode (0, 0, std::shared_ptr <CNode> ()))
 		{
 			m_root->SetSuffLink (m_root);
+			m_g_ind = new size_t (0);
 			
 			return;
 		}
 		
-		~ CSuffixTree () {}
+		~ CSuffixTree () {
+			delete m_g_ind;
+		}
 		
 		void ConstructByUkkonenAlgo (const std::string & str) {
 			State ret_inf = {m_root, 0, 0};
 			
 			m_str = str;
-			for (size_t i = 0; i < m_str.length (); ++i)
+			for (size_t i = 0; i < m_str.length (); ++i) {
+				SetCurrentIndex (i + 1);
 				ret_inf = AppendChar (ret_inf.node, ret_inf.ch, ret_inf.length, i);
+			}
 			
 			return;
 		}
@@ -198,6 +212,29 @@ namespace NMSUkkonenAlgo {
 			base->SetParent (new_node);
 			
 			return new_node;
+		}
+		
+		State WalkDown (
+			const std::shared_ptr <CNode> & from,
+			size_t len,
+			char ch,
+			size_t i
+		) const
+		{
+			State ret {from, len, ch};
+			
+			while (ret.length && ret.node->GetChild (ret.ch)->GetEdgeLength (i + 1) < ret.length) {
+				ret.node = ret.node->GetChild (ret.ch);
+				ret.length -= ret.node->GetEdgeLength (i + 1);
+				ret.ch = m_str[i - ret.length];
+			}
+			if (ret.length && ret.node->GetChild (ret.ch)->GetEdgeLength (i + 1) == ret.length) {
+				ret.node = ret.node->GetChild (ret.ch);
+				ret.length = 0;
+				ret.ch = 0;
+			}
+			
+			return ret;
 		}
 		
 #ifndef NDEBUG
@@ -282,17 +319,11 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-
-		while (len && node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) < len) {
-			node_walk_from = node_walk_from->GetChild (ch);
-			len -= node_walk_from->GetEdgeLength (i + 1);
-			ch = m_str[i - len];
-		}
-		if (len && node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) == len) {
-			node_walk_from = node_walk_from->GetChild (ch);
-			len = 0;
-			ch = 0;
-		}
+		
+		State start = WalkDown (node_walk_from, len, ch, i);
+		node_walk_from = start.node;
+		len = start.length;
+		ch = start.ch;
 		
 		if (!len) {
 			assert (ch == 0);			
@@ -343,20 +374,10 @@ namespace NMSUkkonenAlgo {
 			if (!ret.new_node && !ret.internal_node) 
 			{
 				if (prev_node && prev_node->GetSuffLink() == NULL) {
-					size_t tmp_len = length;
-					char tmp_ch = ch;
-					std::shared_ptr <CNode> tmp_node = exist_node;
-					
-					while (tmp_len && tmp_node->GetChild (tmp_ch)->GetEdgeLength (i + 1) < tmp_len) {
-						tmp_node = tmp_node->GetChild (tmp_ch);
-						tmp_len -= tmp_node->GetEdgeLength (i + 1);
-						tmp_ch = m_str[i - tmp_len];
-					}
-					if (tmp_len && tmp_node->GetChild (tmp_ch)->GetEdgeLength (i + 1) == tmp_len) {
-						tmp_node = tmp_node->GetChild (tmp_ch);
-						tmp_len = 0;
-						tmp_ch = 0;
-					}
+					State start = WalkDown (exist_node, length, ch, i);
+					size_t tmp_len = start.length;
+					char tmp_ch = start.ch;
+					std::shared_ptr <CNode> tmp_node = start.node;
 					
 					prev_node->SetSuffLink (tmp_node);
 				}
@@ -432,9 +453,7 @@ namespace NMSUkkonenAlgo {
 		assert (1 != 1);
 		// never reachs this place
 	}
-	
-	// namespace
-}
+} // namespace
 
 
 std::string ReadFromStreamUntilEof (std::istream & in_s, char no_ch) {
