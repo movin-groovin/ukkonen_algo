@@ -481,9 +481,6 @@ int main (int argc, char **argv) {
 		
 		
 		test_str += fin_ch;
-#ifndef NDEBUG
-		std::cout << test_str << "\n";
-#endif
 		
 		suff_tree.ConstructByUkkonenAlgo (test_str);
 		std::cout << "\nString: " << test_str << "\n\n";
