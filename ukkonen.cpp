@@ -291,10 +291,7 @@ namespace NMSUkkonenAlgo {
 	{
 		Ret ret_dat {nullptr, nullptr};
 		
-std::cout << "First == " << "ch: "<<ch<<"; len: "<<len<<"; i: "<<i<<"; node: " << node_walk_from << "; str[i]: " << m_str[i] << "; root: " << m_root;
-if (node_walk_from) std::cout << "; node i: " <<node_walk_from->GetBegin() << "; node j: " << node_walk_from->GetEnd() << 
-"; subs: " << std::string().assign(m_str, node_walk_from->GetBegin(), node_walk_from->GetEdgeLength()) << "; leaf: "<< node_walk_from->IsLeaf() <<"\n";
-else std::cout << "\n";
+
 		while (len && node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) < len) {
 			node_walk_from = node_walk_from->GetChild (ch);
 			len -= node_walk_from->GetEdgeLength (i + 1);
@@ -309,11 +306,9 @@ else std::cout << "\n";
 		if (!len) {
 			assert (ch == 0);			
 			if (node_walk_from->GetChild (m_str [i])) {
-std::cout << 1.1 << "\n";
 				return ret_dat;
 			}
 			else {
-std::cout << 1.2 << "\n";
 				InsertNode (node_walk_from, i);
 				return Ret {nullptr, node_walk_from};
 			}
@@ -325,11 +320,9 @@ std::cout << 1.2 << "\n";
 			
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
-std::cout << 2 << "\n";	
 				return ret_dat;
 			}
 			else {
-std::cout << 3 << "\n";	
 				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
 				InsertNode (new_node, i);
 				return Ret {new_node, nullptr};
@@ -440,13 +433,6 @@ std::cout << 3 << "\n";
 					return State {m_root, 0, 0};
 				
 				exist_node = ret.internal_node->GetSuffLink ();
-if (!exist_node) {
-	while (m_root != ret.internal_node) {
-		std::cout << ret.internal_node << "\n";
-		ret.internal_node = ret.internal_node->GetParent();
-	}
-	std::cout << ret.internal_node << "\n";
-}
 			}
 			//
 		}
