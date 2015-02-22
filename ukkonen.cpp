@@ -3,11 +3,12 @@
 // printf 'auaa' | ./ukk_algo
 // printf 'adasdas' | ./ukk_algo
 // printf 'aidada' | ./ukk_algo
+// printf '6rr46r4r6r' | ./ukk_algo
+// printf '6rr4r66r4r6r' | ./ukk_algo
 
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -g -pg
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
 
-#define DEBUG_READ_FROM_FILE
 
 
 #include <iostream>
@@ -104,6 +105,7 @@ namespace NMSUkkonenAlgo {
 		void SetSuffLink (const std::shared_ptr <CNode> & suff_link)
 		{
 			//assert (m_suff_link.lock().get() == nullptr);
+			assert (suff_link != nullptr);
 			
 			m_suff_link = suff_link;
 			
@@ -356,11 +358,28 @@ std::cout << 3 << "\n";
 			// First case: the suffix already exists at the tree
 			if (!ret.new_node && !ret.internal_node) 
 			{
+				if (prev_node && prev_node->GetSuffLink() == NULL) {
+					size_t tmp_len = length;
+					char tmp_ch = ch;
+					std::shared_ptr <CNode> tmp_node = exist_node;
+					
+					while (tmp_len && tmp_node->GetChild (tmp_ch)->GetEdgeLength (i + 1) < tmp_len) {
+						tmp_node = tmp_node->GetChild (tmp_ch);
+						tmp_len -= tmp_node->GetEdgeLength (i + 1);
+						tmp_ch = m_str[i - tmp_len];
+					}
+					if (tmp_len && tmp_node->GetChild (tmp_ch)->GetEdgeLength (i + 1) == tmp_len) {
+						tmp_node = tmp_node->GetChild (tmp_ch);
+						tmp_len = 0;
+						tmp_ch = 0;
+					}
+					
+					prev_node->SetSuffLink (tmp_node);
+				}
+				
 				if (!ch) { // && !length
 					assert (length == 0);
-if (i == 479) {
-	std::cout << "beg: " << exist_node->GetChild(m_str[i])->GetBegin() << "; end: " << exist_node->GetChild(m_str[i])->GetEnd() << "\n";
-}					
+					
 					if (exist_node->GetChild(m_str[i])->GetEdgeLength(i + 1) == 1) {
 						return State {exist_node->GetChild(m_str[i]), 0, 0};
 					}
@@ -395,6 +414,7 @@ if (i == 479) {
 						--length;
 						exist_node = ret.new_node->GetParent();
 						ch = m_str[ret.new_node->GetBegin() + 1];
+						ret.new_node->SetSuffLink(m_root);
 					}
 				}
 				else {
@@ -408,6 +428,7 @@ if (i == 479) {
 			else
 			{
 				assert (ret.internal_node);
+				
 				length = 0;
 				ch = 0;
 				
@@ -461,22 +482,23 @@ int main (int argc, char **argv) {
 		std::string test_str = "ababc";
 		NMSUkkonenAlgo::CSuffixTree suff_tree;
 		
-#ifdef DEBUG_READ_FROM_FILE
-		if (argc < 2) {
-			std::cout << "Enter a file's name\n";
-			return 10001;
+		if (argc > 1) {
+			std::ifstream ifs (argv[1]);
+			if (!ifs) {
+				std::cout << "Can't open the file: " << argv[1] << "\n";
+				return 10002;
+			}
+			std::getline (ifs, test_str);
+		} else {
+			test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
 		}
-		std::ifstream ifs (argv[1]);
-		if (!ifs) {
-			std::cout << "Can't open the file: " << argv[1] << "\n";
-			return 10002;
-		}
-		std::getline (ifs, test_str);
-#else
-		test_str = ReadFromStreamUntilEof (std::cin, fin_ch);
-#endif
+		
 		
 		test_str += fin_ch;
+#ifndef NDEBUG
+		std::cout << test_str << "\n";
+#endif
+		
 		suff_tree.ConstructByUkkonenAlgo (test_str);
 		std::cout << "\nString: " << test_str << "\n\n";
 #ifndef NDEBUG
