@@ -214,29 +214,6 @@ namespace NMSUkkonenAlgo {
 			return new_node;
 		}
 		
-		State WalkDown (
-			const std::shared_ptr <CNode> & from,
-			size_t len,
-			char ch,
-			size_t i
-		) const
-		{
-			State ret {from, len, ch};
-			
-			while (ret.length && ret.node->GetChild (ret.ch)->GetEdgeLength (i + 1) < ret.length) {
-				ret.node = ret.node->GetChild (ret.ch);
-				ret.length -= ret.node->GetEdgeLength (i + 1);
-				ret.ch = m_str[i - ret.length];
-			}
-			if (ret.length && ret.node->GetChild (ret.ch)->GetEdgeLength (i + 1) == ret.length) {
-				ret.node = ret.node->GetChild (ret.ch);
-				ret.length = 0;
-				ret.ch = 0;
-			}
-			
-			return ret;
-		}
-		
 #ifndef NDEBUG
 		struct PRINT_ENTRY {
 			std::shared_ptr <CNode> element;
@@ -295,6 +272,32 @@ namespace NMSUkkonenAlgo {
 		}
 #endif
 		
+		State WalkDown (
+			const std::shared_ptr <CNode> & from,
+			size_t len,
+			char ch,
+			size_t i
+		) const
+		{
+			State ret {from, len, ch};
+			
+			while (ret.length && ret.node->GetChild (ret.ch)->GetEdgeLength (i + 1) < ret.length) {
+				ret.node = ret.node->GetChild (ret.ch);
+				ret.length -= ret.node->GetEdgeLength (i + 1);
+				ret.ch = m_str[i - ret.length];
+			}
+			if (!ret.length) {
+				ret.ch = 0;
+			}
+			if (ret.length && ret.node->GetChild (ret.ch)->GetEdgeLength (i + 1) == ret.length) {
+				ret.node = ret.node->GetChild (ret.ch);
+				ret.length = 0;
+				ret.ch = 0;
+			}
+			
+			return ret;
+		}
+		
 		Ret AddSuffix (
 			std::shared_ptr <CNode> node_walk_from,
 			char ch,
@@ -317,18 +320,16 @@ namespace NMSUkkonenAlgo {
 		size_t i
 	)
 	{
-		Ret ret_dat {nullptr, nullptr};
-		
-		
 		State start = WalkDown (node_walk_from, len, ch, i);
 		node_walk_from = start.node;
 		len = start.length;
 		ch = start.ch;
 		
+		
 		if (!len) {
 			assert (ch == 0);			
 			if (node_walk_from->GetChild (m_str [i])) {
-				return ret_dat;
+				return Ret {nullptr, nullptr};
 			}
 			else {
 				InsertNode (node_walk_from, i);
@@ -342,7 +343,7 @@ namespace NMSUkkonenAlgo {
 			
 			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
-				return ret_dat;
+				return Ret {nullptr, nullptr};
 			}
 			else {
 				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
@@ -352,7 +353,9 @@ namespace NMSUkkonenAlgo {
 		}
 		
 		
-		return ret_dat;
+		// never reaches this place
+		assert (1 != 1);
+		return Ret {nullptr, nullptr};
 	}
 	// ====================================================================================
 	State CSuffixTree::AppendChar (
@@ -375,11 +378,8 @@ namespace NMSUkkonenAlgo {
 			{
 				if (prev_node && prev_node->GetSuffLink() == NULL) {
 					State start = WalkDown (exist_node, length, ch, i);
-					size_t tmp_len = start.length;
-					char tmp_ch = start.ch;
-					std::shared_ptr <CNode> tmp_node = start.node;
 					
-					prev_node->SetSuffLink (tmp_node);
+					prev_node->SetSuffLink (start.node);
 				}
 				
 				if (!ch) { // && !length
@@ -409,17 +409,17 @@ namespace NMSUkkonenAlgo {
 				prev_node = ret.new_node;
 				
 				if (ret.new_node->GetParent () == m_root) {
+					ret.new_node->SetSuffLink(m_root);
+					
 					if (ret.new_node->GetEdgeLength () == 1) {
 						ch = 0;
 						length = 0;
 						exist_node = ret.new_node->GetParent (); // = m_root
-						ret.new_node->SetSuffLink(m_root);
 					}
 					else {
 						--length;
 						exist_node = ret.new_node->GetParent();
 						ch = m_str[ret.new_node->GetBegin() + 1];
-						ret.new_node->SetSuffLink(m_root);
 					}
 				}
 				else {
