@@ -163,6 +163,7 @@ namespace NMSUkkonenAlgo {
 			m_root (new CNode (0, 0, NULL))
 		{
 			m_root->SetSuffLink (m_root);
+			m_root->SetParent (m_root);
 			
 			return;
 		}
@@ -173,6 +174,7 @@ namespace NMSUkkonenAlgo {
 			State ret_inf = {m_root, 0, 0};
 			
 			m_str = str;
+			
 			for (size_t i = 0; i < m_str.length (); ++i) {
 				ret_inf = AppendChar (ret_inf.node, ret_inf.ch, ret_inf.length, i);
 			}
@@ -323,7 +325,7 @@ namespace NMSUkkonenAlgo {
 			if (node_walk_from->GetChild (m_str [i])) {
 				return Ret {nullptr, nullptr};
 			}
-			else {
+			else {		
 				InsertNode (node_walk_from, i);
 				return Ret {nullptr, node_walk_from};
 			}
@@ -358,7 +360,7 @@ namespace NMSUkkonenAlgo {
 	)
 	{
 		Ret ret;
-		CNode* prev_node;
+		CNode* prev_node = nullptr;
 		CNode* exist_node (node);
 		
 		
