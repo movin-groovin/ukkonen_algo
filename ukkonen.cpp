@@ -167,6 +167,7 @@ namespace NMSUkkonenAlgo {
 			m_root (new CNode (0, 0, std::shared_ptr <CNode> ()))
 		{
 			m_root->SetSuffLink (m_root);
+			m_root->SetParent (m_root);
 			m_g_ind = new size_t (0);
 			
 			return;
