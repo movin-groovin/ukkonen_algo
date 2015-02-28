@@ -327,7 +327,7 @@ namespace NMSUkkonenAlgo {
 		else {
 			// 'len' is everything less than 
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
-			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
+			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i + 1) > len);
 			
 			CNode* node_begin = node_walk_from->GetChild (ch);
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
