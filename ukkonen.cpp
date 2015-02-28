@@ -137,7 +137,11 @@ namespace NMSUkkonenAlgo {
 		
 		~ CNode ()
 		{
-			std::for_each (&m_childs[0], &m_childs[0] + chars_number, [] (CNode *ptr)->void {if (ptr) delete ptr;});
+			std::for_each (
+				&m_childs[0],
+				&m_childs[0] + chars_number,
+				[] (CNode *ptr)->void {if (ptr) delete ptr;}
+			);
 			return;
 		}
 	};
