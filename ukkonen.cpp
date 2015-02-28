@@ -367,7 +367,7 @@ namespace NMSUkkonenAlgo {
 	)
 	{
 		Ret ret;
-		std::shared_ptr <CNode> prev_node (std::shared_ptr <CNode>());
+		std::shared_ptr <CNode> prev_node (nullptr);
 		std::shared_ptr <CNode> exist_node (node);
 		
 		
