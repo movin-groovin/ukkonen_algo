@@ -1,6 +1,7 @@
 
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -g -pg
 // g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG
+// g++ -std=c++11 ukkonen.cpp -o ukk_algo -DNDEBUG -DMEMORY_TEST
 
 #include <iostream>
 #include <string>
@@ -492,7 +493,11 @@ int main (int argc, char **argv) {
 		std::cout << "Suffix tree: \n";
 		suff_tree.PrintDfs ();
 #endif
-		
+#ifdef MEMORY_TEST
+		char ch;
+		std::cout << "Press enter to continue: ";
+		ch = getchar ();
+#endif
 		return 0;
 	} catch (std::exception & Exc) {
 		std::cout << Exc.what() << std::endl;
