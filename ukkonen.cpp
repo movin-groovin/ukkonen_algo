@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <stack>
 #include <fstream>
+#include <algorithm>
 
 #include <cassert>
 #include <cstdio>
@@ -21,15 +22,15 @@ namespace NMSUkkonenAlgo {
 	//
 	class CNode;
 	struct State {
-		std::shared_ptr <CNode> node;
+		CNode* node;
 		size_t length;
 		char ch;
 	};
 
 
 	struct Ret {
-		std::shared_ptr <CNode> new_node;
-		std::shared_ptr <CNode> internal_node; // exist node
+		CNode* new_node;
+		CNode* internal_node; // exist node
 	};
 
 
@@ -43,9 +44,9 @@ namespace NMSUkkonenAlgo {
 		size_t m_i;
 		// if m_j equals -1, then this node is a leaf
 		size_t m_j; 
-		std::weak_ptr <CNode> m_parent;
-		std::weak_ptr <CNode> m_suff_link;
-		std::vector <std::shared_ptr <CNode>> m_childs;
+		CNode* m_parent;
+		CNode* m_suff_link;
+		CNode* m_childs [chars_number];
 		
 	public:
 		bool IsLeaf () const {
@@ -78,22 +79,22 @@ namespace NMSUkkonenAlgo {
 			return m_j;
 		}
 		
-		std::shared_ptr <CNode> GetParent () const {
-			return m_parent.lock();
+		CNode* GetParent () const {
+			return m_parent;
 		}
 		
-		void SetParent (std::shared_ptr <CNode> & node) {
+		void SetParent (CNode* node) {
 			// we don't use assert, because the parent can be changed
 			m_parent = node;
 			
 			return;
 		}
 		
-		std::shared_ptr <CNode> GetSuffLink () const {
-			return m_suff_link.lock();
+		CNode* GetSuffLink () const {
+			return m_suff_link;
 		}
 		
-		void SetSuffLink (const std::shared_ptr <CNode> & suff_link)
+		void SetSuffLink (CNode* suff_link)
 		{
 			//assert (m_suff_link.lock().get() == nullptr);
 			assert (suff_link != nullptr);
@@ -103,14 +104,14 @@ namespace NMSUkkonenAlgo {
 			return;
 		}
 		
-		std::shared_ptr <CNode> GetChild (char ch) const {
+		CNode* GetChild (char ch) const {
 			assert (m_j != -1);
 			
 			return m_childs[GetCharIndex (ch)];
 		}
 		
 		void SetChild (
-			const std::shared_ptr <CNode> & child,
+			CNode* child,
 			char ch
 		)
 		{
@@ -124,81 +125,68 @@ namespace NMSUkkonenAlgo {
 		CNode (
 			size_t i,
 			size_t j,
-			const std::shared_ptr <CNode> & parent
+			CNode* parent
 		):
 			m_i(i),
 			m_j(j),
 			m_parent(parent)
 		{
-			if (j != -1)
-				m_childs.resize (chars_number);
-			else
-				m_childs.resize (0);
-			
+			std::fill (&m_childs[0], &m_childs[0] + chars_number, nullptr);
 			return;
 		}
 		
-		~ CNode () {}
+		~ CNode ()
+		{
+			std::for_each (&m_childs[0], &m_childs[0] + chars_number, [] (CNode *ptr)->void {if (ptr) delete ptr;});
+			return;
+		}
 	};
 
 	// ====================================================================================
 
 	class CSuffixTree {
 	private:
-		std::shared_ptr <CNode> m_root;
+		CNode* m_root;
 		std::string m_str;
-		size_t *m_g_ind;
 		
-		bool IsRoot (const std::shared_ptr <CNode> & ptr_link) const {
+		bool IsRoot (const CNode* ptr_link) const {
 			return (ptr_link->GetBegin () == 0) && (ptr_link->GetEnd () == 0);
-		}
-		
-		size_t GetCurrentIndex () const {
-			return *m_g_ind;
-		}
-		
-		void SetCurrentIndex (size_t i) {
-			*m_g_ind = i;
 		}
 		
 	public:
 	
 		CSuffixTree ():
-			m_root (new CNode (0, 0, std::shared_ptr <CNode> ()))
+			m_root (new CNode (0, 0, NULL))
 		{
 			m_root->SetSuffLink (m_root);
-			m_g_ind = new size_t (0);
 			
 			return;
 		}
 		
-		~ CSuffixTree () {
-			delete m_g_ind;
-		}
+		~ CSuffixTree () {}
 		
 		void ConstructByUkkonenAlgo (const std::string & str) {
 			State ret_inf = {m_root, 0, 0};
 			
 			m_str = str;
 			for (size_t i = 0; i < m_str.length (); ++i) {
-				SetCurrentIndex (i + 1);
 				ret_inf = AppendChar (ret_inf.node, ret_inf.ch, ret_inf.length, i);
 			}
 			
 			return;
 		}
 		
-		std::shared_ptr <CNode> InsertNode (std::shared_ptr <CNode> &parent, size_t i)
+		CNode* InsertNode (CNode* parent, size_t i)
 		{
-			std::shared_ptr <CNode> new_node (new CNode (i, -1, parent));
+			CNode* new_node (new CNode (i, -1, parent));
 			parent->SetChild (new_node, m_str[i]);
 			
 			return new_node;
 		}
 		
-		std::shared_ptr <CNode> SplitEdge (std::shared_ptr <CNode> &base, size_t len) {
-			std::shared_ptr <CNode> parent = base->GetParent ();
-			std::shared_ptr <CNode> new_node {new CNode (
+		CNode* SplitEdge (CNode* base, size_t len) {
+			CNode* parent = base->GetParent ();
+			CNode* new_node {new CNode (
 					base->GetBegin (),
 					base->GetBegin () + len,
 					parent
@@ -216,7 +204,7 @@ namespace NMSUkkonenAlgo {
 		
 #ifndef NDEBUG
 		struct PRINT_ENTRY {
-			std::shared_ptr <CNode> element;
+			CNode* element;
 			unsigned char cnt;
 			std::string space;
 		};
@@ -229,12 +217,12 @@ namespace NMSUkkonenAlgo {
 			stack.push (PRINT_ENTRY {m_root, 0, ""});
 			while (!stack.empty ())
 			{
-				std::shared_ptr <CNode> proc_elem = stack.top().element;
+				CNode* proc_elem = stack.top().element;
 				unsigned char proc_cnt = stack.top().cnt;
 				
 				for (int cnt = proc_cnt; cnt <= CNode::chars_number - 1; ++cnt)
 				{
-					std::shared_ptr <CNode> child = proc_elem->GetChild (cnt);
+					CNode* child = proc_elem->GetChild (cnt);
 					if (child) {
 						PrintEdge (child, stack.top().space);
 						if (!child->IsLeaf ()) {
@@ -261,7 +249,7 @@ namespace NMSUkkonenAlgo {
 			return;
 		}
 		
-		void PrintEdge (std::shared_ptr <CNode> & node, const std::string & prefix) const {
+		void PrintEdge (CNode* node, const std::string & prefix) const {
 			std::cout << prefix << std::string().assign (
 				m_str,
 				node->GetBegin(),
@@ -273,7 +261,7 @@ namespace NMSUkkonenAlgo {
 #endif
 		
 		State WalkDown (
-			const std::shared_ptr <CNode> & from,
+			CNode* from,
 			size_t len,
 			char ch,
 			size_t i
@@ -299,14 +287,14 @@ namespace NMSUkkonenAlgo {
 		}
 		
 		Ret AddSuffix (
-			std::shared_ptr <CNode> node_walk_from,
+			CNode* node_walk_from,
 			char ch,
 			size_t len,
 			size_t i
 		);
 		
 		State AppendChar (
-			const std::shared_ptr <CNode> & node,
+			CNode* node,
 			char ch,
 			size_t length,
 			size_t i
@@ -314,7 +302,7 @@ namespace NMSUkkonenAlgo {
 	};
 	// ====================================================================================
 	Ret CSuffixTree::AddSuffix (
-		std::shared_ptr <CNode> node_walk_from,
+		CNode* node_walk_from,
 		char ch,
 		size_t len,
 		size_t i
@@ -341,12 +329,12 @@ namespace NMSUkkonenAlgo {
 			// 'node_walk_from->GetChild (ch)->GetEdgeLength(i)'
 			assert (node_walk_from->GetChild (ch)->GetEdgeLength (i) > len);
 			
-			std::shared_ptr <CNode> node_begin = node_walk_from->GetChild (ch);
+			CNode* node_begin = node_walk_from->GetChild (ch);
 			if (m_str[node_begin->GetBegin () + len] == m_str[i]) {
 				return Ret {nullptr, nullptr};
 			}
 			else {
-				std::shared_ptr <CNode> new_node = SplitEdge (node_begin, len);
+				CNode* new_node = SplitEdge (node_begin, len);
 				InsertNode (new_node, i);
 				return Ret {new_node, nullptr};
 			}
@@ -359,15 +347,15 @@ namespace NMSUkkonenAlgo {
 	}
 	// ====================================================================================
 	State CSuffixTree::AppendChar (
-		const std::shared_ptr <CNode> & node,
+		CNode* node,
 		char ch,
 		size_t length,
 		size_t i
 	)
 	{
 		Ret ret;
-		std::shared_ptr <CNode> prev_node;
-		std::shared_ptr <CNode> exist_node (node);
+		CNode* prev_node;
+		CNode* exist_node (node);
 		
 		
 		while (true) {
